@@ -22,5 +22,7 @@ services:
         value: "true"
       - key: TEST_CAPTURE
         value: "false"
+      - key: DISPLAY_TIMEZONE
+        value: Africa/Lagos
       - key: USER_TOKEN
         sync: false

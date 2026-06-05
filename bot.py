@@ -16,6 +16,7 @@ import re
 import sys
 import time
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import discord
 from dotenv import load_dotenv
@@ -138,6 +139,15 @@ HIDE_GUILD_JOIN_SERVERS = frozenset(
     for s in (os.getenv("HIDE_GUILD_JOIN_SERVERS") or "").split(",")
     if s.strip()
 )
+# Skip log-bot capture when guild join already covers these servers (avoids Cryptera doubles).
+SKIP_LOG_IF_GUILD_JOIN = frozenset(
+    s.strip().lower()
+    for s in (os.getenv("SKIP_LOG_IF_GUILD_JOIN") or "Cryptera").split(",")
+    if s.strip()
+)
+DISPLAY_TIMEZONE = (
+    os.getenv("DISPLAY_TIMEZONE") or os.getenv("TZ") or ""
+).strip()
 
 JOIN_CHANNEL_HINTS = (
     "welcome",
@@ -179,7 +189,14 @@ def _normalize_dt(dt: datetime | None = None) -> datetime:
 
 
 def _local_parts_from_dt(dt: datetime | None = None) -> tuple[str, str]:
-    local = _normalize_dt(dt).astimezone()
+    instant = _normalize_dt(dt)
+    if DISPLAY_TIMEZONE:
+        try:
+            local = instant.astimezone(ZoneInfo(DISPLAY_TIMEZONE))
+        except Exception:
+            local = instant.astimezone()
+    else:
+        local = instant.astimezone()
     time_str = local.strftime("%I:%M %p")
     if time_str.startswith("0"):
         time_str = time_str[1:]
@@ -513,7 +530,8 @@ class ScraperClient(discord.Client):
         print(f"[{CLIENT_NAME}] Logged in as {self.user} (id: {self.user.id})", flush=True)
         await self._open_forward_channel()
         print(
-            f"[{CLIENT_NAME}] Tracking {len(self.guilds)} server(s) · mode={CAPTURE_MODE}",
+            f"[{CLIENT_NAME}] Tracking {len(self.guilds)} server(s) · mode={CAPTURE_MODE}"
+            f" · tz={DISPLAY_TIMEZONE or 'system'}",
             flush=True,
         )
         guild_names = sorted(g.name for g in self.guilds)
@@ -588,10 +606,13 @@ class ScraperClient(discord.Client):
                 )
             return
 
-        # Same-server log bots duplicate on_member_join — guild join is enough.
+        # Cryptera etc.: guild join + log bot would double; other servers need log-bot path.
         guild_name = message.guild.name
         server_name = str(data.get("server_name") or "").strip()
-        if server_name.lower() == guild_name.lower():
+        if (
+            server_name.lower() == guild_name.lower()
+            and server_name.lower() in SKIP_LOG_IF_GUILD_JOIN
+        ):
             return
 
         await self._emit_capture(data)
