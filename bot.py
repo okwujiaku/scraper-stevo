@@ -183,11 +183,16 @@ def _local_parts_from_dt(dt: datetime | None = None) -> tuple[str, str]:
     time_str = local.strftime("%I:%M %p")
     if time_str.startswith("0"):
         time_str = time_str[1:]
-    return local.strftime("%b %d, %Y"), time_str
+    try:
+        day = local.strftime("%#d")
+    except ValueError:
+        day = str(local.day)
+    date_str = f"{local.strftime('%B')} {day}, {local.strftime('%Y')}"
+    return date_str, time_str
 
 
 def _capture_time_fields(when: datetime | None = None) -> dict:
-    """captured_at = unix instant; Discord <t:…> renders per viewer timezone."""
+    """captured_at = unix instant; date/time strings for plain-text group messages."""
     instant = _normalize_dt(when)
     date, time_str = _local_parts_from_dt(instant)
     return {
@@ -238,19 +243,13 @@ def process_extracted_data(data: dict) -> None:
 
 def format_capture_message(data: dict) -> str:
     """Plain text for group DM — self-bots cannot use embeds."""
-    lines = [f"**{CAPTURE_TITLE}**", ""]
-    ts = data.get("captured_at")
+    lines = [f"**{CAPTURE_TITLE}**"]
     for label, key, icon, _ in FIELD_STYLE:
-        if key == "date" and ts:
-            lines.append(f"{icon} **{label}:** <t:{ts}:D>")
-            continue
-        if key == "time" and ts:
-            lines.append(f"{icon} **{label}:** <t:{ts}:t>")
-            continue
         value = str(data.get(key) or "N/A")
         if key == "username":
             value = f"`{value}`"
         lines.append(f"{icon} **{label}:** {value}")
+    lines.extend(["", "─" * 28])
     return "\n".join(lines)
 
 

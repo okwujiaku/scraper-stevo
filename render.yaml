@@ -16,5 +16,9 @@ services:
         value: all
       - key: DEBUG
         value: "false"
+      - key: SEND_STARTUP_PING
+        value: "true"
+      - key: TEST_CAPTURE
+        value: "false"
       - key: USER_TOKEN
         sync: false
