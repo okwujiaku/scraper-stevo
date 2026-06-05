@@ -8,6 +8,8 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
       - key: CHAT_ID
         value: "1511486061941882930"
       - key: CLIENT_NAME
