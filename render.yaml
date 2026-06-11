@@ -1,10 +1,11 @@
-# Render Blueprint — Background Worker (no HTTP port).
+# Render Blueprint — Stevo Background Worker
 # Set USER_TOKEN in the Render dashboard (Environment), not here.
 services:
   - type: worker
     name: stevo-join-tracker
     runtime: python
     plan: starter
+    rootDir: bot
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
     envVars:
@@ -14,14 +15,6 @@ services:
         value: "1511486061941882930"
       - key: CLIENT_NAME
         value: Stevo
-      - key: CAPTURE_MODE
-        value: all
-      - key: DEBUG
-        value: "false"
-      - key: SEND_STARTUP_PING
-        value: "true"
-      - key: TEST_CAPTURE
-        value: "false"
       - key: DISPLAY_TIMEZONE
         value: Africa/Lagos
       - key: USER_TOKEN

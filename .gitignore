@@ -1,4 +1,7 @@
 .env
+bot/.env
 __pycache__/
 *.pyc
 .cursor/
+*.log
+debug-*.log
